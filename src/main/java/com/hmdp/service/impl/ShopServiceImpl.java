@@ -35,6 +35,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
 
     @Override
     public Result queryById(Long id) {
+        /*
         return cacheClient.cacheQuery(
                 RedisConstants.CACHE_SHOP_KEY + id,
                 () -> getById(id),
@@ -42,6 +43,28 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
                 "店铺不存在！",
                 30,
                 TimeUnit.MINUTES);
+         */
+
+//        Shop shop = cacheClient.queryWithMutex(
+//                RedisConstants.CACHE_SHOP_KEY + id,
+//                RedisConstants.LOCK_SHOP_KEY + id,
+//                () -> getById(id),
+//                json -> JSONUtil.toBean(json, Shop.class),
+//                30,
+//                TimeUnit.MINUTES);
+
+
+        Shop shop = cacheClient.queryWithLogicalExpire(
+                RedisConstants.CACHE_SHOP_KEY + id,
+                RedisConstants.LOCK_SHOP_KEY + id,
+                () -> getById(id),
+                json -> JSONUtil.toBean(json, Shop.class),
+                30,
+                TimeUnit.MINUTES);
+
+        if (shop == null)
+            return Result.fail("店铺不存在！");
+        return Result.ok(shop);
     }
 
     @Override
