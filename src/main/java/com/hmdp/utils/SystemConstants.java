@@ -8,4 +8,6 @@ public class SystemConstants {
     public static final String LOGIN_CODE_KEY = "login:code:";
     public static final String LOGIN_USER_KEY = "login:token:";
     public static final long LOGIN_USER_TTL = 30;
+    public static final String CACHE_SHOP_KEY = "cache:shop:";
+    public static final String CACHE_SHOP_TYPE_LIST_KEY = "cache:shop-type:list";
 }

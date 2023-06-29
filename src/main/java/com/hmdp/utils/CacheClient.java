@@ -8,6 +8,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -17,7 +18,12 @@ public class CacheClient {
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
-    public <T> Result cacheQuery(String key, Supplier<T> query, Function<String, T> converter, String failInfo) {
+    public <T> Result cacheQuery(String key,
+                                 Supplier<T> query,
+                                 Function<String, T> converter,
+                                 String failInfo,
+                                 long expire,
+                                 TimeUnit timeUnit) {
         String json = stringRedisTemplate.opsForValue().get(key);
 
         if (StrUtil.isNotBlank(json))
@@ -27,7 +33,7 @@ public class CacheClient {
 
         if (data != null) {
             String jsonStr = JSONUtil.toJsonStr(data);
-            stringRedisTemplate.opsForValue().set(key, jsonStr);
+            stringRedisTemplate.opsForValue().set(key, jsonStr, expire, timeUnit);
             return Result.ok(data);
         }
 
