@@ -7,6 +7,7 @@ import com.hmdp.entity.Shop;
 import com.hmdp.mapper.ShopMapper;
 import com.hmdp.service.IShopService;
 import com.hmdp.utils.CacheClient;
+import com.hmdp.utils.RedisConstants;
 import com.hmdp.utils.SystemConstants;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     @Override
     public Result queryById(Long id) {
         return cacheClient.cacheQuery(
-                SystemConstants.CACHE_SHOP_KEY + id,
+                RedisConstants.CACHE_SHOP_KEY + id,
                 () -> getById(id),
                 json -> JSONUtil.toBean(json, Shop.class),
                 "店铺不存在！",
@@ -51,7 +52,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         // 写入数据库
         updateById(shop);
         // 删除缓存
-        stringRedisTemplate.delete(SystemConstants.CACHE_SHOP_KEY + shop.getId());
+        stringRedisTemplate.delete(RedisConstants.CACHE_SHOP_KEY + shop.getId());
 
         return Result.ok();
     }

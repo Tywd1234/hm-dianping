@@ -1,13 +1,13 @@
 package com.hmdp.service.impl;
 
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.dto.Result;
 import com.hmdp.entity.ShopType;
 import com.hmdp.mapper.ShopTypeMapper;
 import com.hmdp.service.IShopTypeService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.utils.CacheClient;
-import com.hmdp.utils.SystemConstants;
+import com.hmdp.utils.RedisConstants;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -29,7 +29,7 @@ public class ShopTypeServiceImpl extends ServiceImpl<ShopTypeMapper, ShopType> i
     @Override
     public Result queryTypeList() {
         return cacheClient.cacheQuery(
-                SystemConstants.CACHE_SHOP_TYPE_LIST_KEY,
+                RedisConstants.CACHE_SHOP_TYPE_LIST_KEY,
                 () -> query().orderByAsc("sort").list(),
                 JSONUtil::parseArray,
                 "店铺类型不存在！",
