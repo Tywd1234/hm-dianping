@@ -1,15 +1,15 @@
 package com.hmdp.controller;
 
 
+import cn.hutool.json.JSONUtil;
 import com.hmdp.dto.Result;
-import com.hmdp.entity.ShopType;
 import com.hmdp.service.IShopTypeService;
+import com.hmdp.utils.CacheClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
-import java.util.List;
 
 /**
  * <p>
@@ -25,10 +25,15 @@ public class ShopTypeController {
     @Resource
     private IShopTypeService typeService;
 
+    @Resource
+    CacheClient cacheClient;
+
     @GetMapping("list")
     public Result queryTypeList() {
-        List<ShopType> typeList = typeService
-                .query().orderByAsc("sort").list();
-        return Result.ok(typeList);
+        String key = "cache:shop-type:list";
+        return cacheClient.cacheQuery(key,
+                () -> typeService.query().orderByAsc("sort").list(),
+                JSONUtil::parseArray,
+                "店铺类型不存在！");
     }
 }
