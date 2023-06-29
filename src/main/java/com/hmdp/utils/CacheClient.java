@@ -29,6 +29,10 @@ public class CacheClient {
         if (StrUtil.isNotBlank(json))
             return Result.ok(converter.apply(json));
 
+        if (json != null) {
+            return Result.fail(failInfo);
+        }
+
         T data = query.get();
 
         if (data != null) {
@@ -37,6 +41,7 @@ public class CacheClient {
             return Result.ok(data);
         }
 
+        stringRedisTemplate.opsForValue().set(key, "", expire, timeUnit);
         return Result.fail(failInfo);
     }
 }
