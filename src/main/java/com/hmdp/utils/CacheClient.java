@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -120,6 +122,8 @@ public class CacheClient {
         }
     }
 
+    private static final ExecutorService CACHE_REBUILD_EXECUTOR = Executors.newFixedThreadPool(10);
+
     public <T> T queryWithLogicalExpire(
             String queryKey,
             String lockKey,
@@ -137,6 +141,10 @@ public class CacheClient {
                 if (success) {
                     try {
                         T data = query.get();
+                        if (data == null) {
+                            stringRedisTemplate.opsForValue().set(queryKey, "", expire, timeUnit);
+                            return null;
+                        }
                         setWithLogicalExpire(queryKey, data, expire, timeUnit);
                         return data;
                     } finally {
@@ -156,18 +164,20 @@ public class CacheClient {
         if (redisData.getExpireTime().isBefore(LocalDateTime.now())) {
             boolean success = tryLock(lockKey);
             if (success) {
-                try {
-                    T data = query.get();
-                    if (data == null)
-                        setWithLogicalExpire(queryKey, "", expire, timeUnit);
-                    setWithLogicalExpire(queryKey, data, expire, timeUnit);
-                    return data;
-                } finally {
-                    unlock(lockKey);
-                }
+                CACHE_REBUILD_EXECUTOR.submit(() -> {
+                    try {
+                        T data = query.get();
+                        if (data == null) {
+                            stringRedisTemplate.opsForValue().set(queryKey, "", expire, timeUnit);
+                        }
+                        setWithLogicalExpire(queryKey, data, expire, timeUnit);
+                    } finally {
+                        unlock(lockKey);
+                    }
+                });
             }
         }
-        // 未过期 / 获取锁未成功
+        // 未过期 / 获取锁未成功 / 返回旧数据
         return converter.apply(JSONUtil.toJsonStr(redisData.getData()));
     }
 }
