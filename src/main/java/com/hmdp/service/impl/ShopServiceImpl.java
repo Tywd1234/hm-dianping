@@ -31,7 +31,6 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     @Resource
     StringRedisTemplate stringRedisTemplate;
 
-    @Resource
 
     @Override
     public Result queryById(Long id) {
