@@ -1,28 +1,37 @@
 package com.hmdp;
 
-import cn.hutool.json.JSONUtil;
-import com.hmdp.entity.Voucher;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
 
-import java.time.LocalDateTime;
+import javax.annotation.Resource;
+import java.util.concurrent.TimeUnit;
 
 @SpringBootTest
+@RunWith(SpringRunner.class)
 public class HmDianPingApplicationTests {
 
+    @Resource
+    RedissonClient redissonClient;
+
     @Test
-    public void test() {
-        Voucher voucher = new Voucher()
-                .setShopId(1L)
-                .setTitle("100元代金券")
-                .setSubTitle("周一至周日均可使用")
-                .setRules("全场通用\n无需预约\n可无限叠加")
-                .setPayValue(8000L)
-                .setActualValue(10000L)
-                .setType(1)
-                .setStock(100)
-                .setBeginTime(LocalDateTime.now())
-                .setEndTime(LocalDateTime.now().plusDays(2));
-        System.out.println(JSONUtil.toJsonStr(voucher));
+    public void testRedisson() throws Exception {
+        //获取锁(可重入)，指定锁的名称
+        RLock lock = redissonClient.getLock("anyLock");
+        //尝试获取锁，参数分别是：获取锁的最大等待时间(期间会重试)，锁自动释放时间，时间单位
+        boolean isLock = lock.tryLock(1, 10, TimeUnit.SECONDS);
+        //判断获取锁成功
+        if (isLock) {
+            try {
+                System.out.println("执行业务");
+            } finally {
+                //释放锁
+                lock.unlock();
+            }
+
+        }
     }
 }
