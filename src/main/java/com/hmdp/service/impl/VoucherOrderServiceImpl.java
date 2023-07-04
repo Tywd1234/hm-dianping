@@ -1,5 +1,7 @@
 package com.hmdp.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.hmdp.dto.Result;
 import com.hmdp.entity.SeckillVoucher;
 import com.hmdp.entity.VoucherOrder;
@@ -53,9 +55,26 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             return Result.fail("库存不足！");
         }
         //5，扣减库存
-        boolean success = seckillVoucherService.update()
-                .setSql("stock= stock -1")
-                .eq("voucher_id", voucherId).update();
+
+//        boolean success = seckillVoucherService.update()
+//                .setSql("stock= stock -1")
+//                .eq("voucher_id", voucherId).update();
+
+//
+//        LambdaUpdateWrapper<SeckillVoucher> updateWrapper = new LambdaUpdateWrapper<>();
+//        updateWrapper.set(SeckillVoucher::getStock, voucher.getStock() - 1)
+//                .eq(SeckillVoucher::getVoucherId, voucher.getVoucherId())
+//                .eq(SeckillVoucher::getStock, voucher.getStock());
+
+
+        LambdaUpdateWrapper<SeckillVoucher> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper
+//                .set(SeckillVoucher::getStock, voucher.getStock() - 1) // 这样会超卖
+                .setSql("stock= stock -1") // 这样才对
+                .eq(SeckillVoucher::getVoucherId, voucher.getVoucherId())
+                .gt(SeckillVoucher::getStock, 0); // > 0
+        boolean success = seckillVoucherService.update(updateWrapper);
+
         if (!success) {
             //扣减库存
             return Result.fail("库存不足！");
