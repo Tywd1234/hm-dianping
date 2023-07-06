@@ -105,4 +105,18 @@ public class HmDianPingApplicationTests {
             stringRedisTemplate.opsForGeo().add(RedisConstants.SHOP_GEO_KEY + type.toString(), geoLocationList);
         });
     }
+
+    @Test
+    public void testHyperLogLog() {
+        String[] strings = new String[1000];
+        for (int i = 0; i < 1000; i++) {
+            for (int j = 0; j < 1000; j++) {
+                strings[j] = "user_" + (i * 1000 + j);
+            }
+            stringRedisTemplate.opsForHyperLogLog().add("hll1", strings);
+        }
+
+        Long size = stringRedisTemplate.opsForHyperLogLog().size("hll1");
+        System.out.println(size);
+    }
 }
