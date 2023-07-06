@@ -5,7 +5,9 @@ import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.lang.UUID;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hmdp.dto.UserDTO;
+import com.hmdp.entity.Shop;
 import com.hmdp.entity.User;
+import com.hmdp.service.IShopService;
 import com.hmdp.service.IUserService;
 import com.hmdp.utils.RedisConstants;
 import org.junit.Test;
@@ -13,6 +15,8 @@ import org.junit.runner.RunWith;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.geo.Point;
+import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -21,8 +25,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @SpringBootTest
 @RunWith(SpringRunner.class)
@@ -54,6 +60,7 @@ public class HmDianPingApplicationTests {
 
     @Resource
     IUserService userService;
+
     // 生成token
     @Test
     public void createTokens() throws IOException {
@@ -76,5 +83,26 @@ public class HmDianPingApplicationTests {
 
         printStream.close();
         fileOutputStream.close();
+    }
+
+    @Resource
+    IShopService shopService;
+
+    @Test
+    public void addGEO() {
+        List<Shop> list = shopService.list();
+        Map<Long, List<Shop>> collect = list.stream()
+                .collect(Collectors.groupingBy(Shop::getTypeId));
+
+        collect.forEach((type, v) -> {
+            List<RedisGeoCommands.GeoLocation<String>> geoLocationList = v.stream()
+                    .map(shop -> new RedisGeoCommands.GeoLocation<>(
+                            shop.getId().toString(),
+                            new Point(shop.getX(), shop.getY()))
+                    )
+                    .collect(Collectors.toList());
+
+            stringRedisTemplate.opsForGeo().add(RedisConstants.SHOP_GEO_KEY + type.toString(), geoLocationList);
+        });
     }
 }
